@@ -6,22 +6,18 @@ import argparse
 from datetime import datetime
 import time
 import os
+from selenium import webdriver
+from selenium.webdriver.firefox.service import Service
+
+driver = None
 
 # Grab a page and return the parsed BeautifulSoup object
 def fetch_page(url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            return BeautifulSoup(response.content, 'html.parser')
-        else:
-            print(f"Failed to get page. Status code: {response.status_code}")
-            return None
-    except requests.exceptions.RequestException as e:
-        print(f"An error occurred while fetching the page: {e}")
-        return None
+        
+    driver.get(url)
+    
+    return BeautifulSoup(driver.page_source, 'html.parser')
+
 
 # Scrape search results from Goodreads
 def scrape_search_results(search_url):
@@ -128,14 +124,17 @@ def save_book_to_json(book, index, directory='books_json'):
 
 def main():
 
-    search_url = f'https://www.goodreads.com/list/show/2384.Best_Gothic_Novels_Suspense_Novels'
-    books = scrape_search_results(search_url)
+    service = Service('/Users/angelinasisixia1/Desktop/School/geckodriver')
+    global driver
+    with webdriver.Firefox(service=service) as driver:
+        search_url = f'https://www.goodreads.com/list/show/2384.Best_Gothic_Novels_Suspense_Novels'
+        books = scrape_search_results(search_url)
 
-    if books:
-        for index, book in enumerate(books):
-            save_book_to_json(book, index)
-    else:
-        print("No books were found.")
+        if books:
+            for index, book in enumerate(books):
+                save_book_to_json(book, index)
+        else:
+            print("No books were found.")
 
 if __name__ == '__main__':
     main()
