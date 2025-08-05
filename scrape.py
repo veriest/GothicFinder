@@ -31,6 +31,7 @@ def close_login() -> bool:
 
 # Scrape search results from Goodreads
 def scrape_search_results(search_url):
+    
     soup = fetch_page(search_url)
     
     time.sleep(1)
@@ -39,8 +40,24 @@ def scrape_search_results(search_url):
     if soup is None:
         print("Failed to get the page or parse the content.")
         return []
+    
+    books = get_books(soup)
+    i = 1
 
-    book_containers = soup.find_all('tr', {'itemtype': 'http://schema.org/Book'}, limit=2)
+    while len(books) <=400: 
+        i+=1
+        books.extend(get_books(fetch_page(f'{search_url}?page={i}')))
+        try:
+            driver.find_element(By.XPATH,'//span[@class="next_page disabled"]')
+            break
+        except:
+            pass
+    return books
+
+def get_books(soup):
+
+    book_containers = soup.find_all('tr', {'itemtype': 'http://schema.org/Book'},limit=5)
+
     books = []
 
     for book in book_containers:
@@ -48,14 +65,15 @@ def scrape_search_results(search_url):
             #strip out book information
             title_tag = book.find('a', class_='bookTitle')
             title = title_tag.text.strip() if title_tag else "No title"
+            print(f"got book {title}")
             book_url = urljoin("https://www.goodreads.com", title_tag['href']) if title_tag else None
             author_tag = book.find('a', class_='authorName')
             author = author_tag.text.strip() if author_tag else "No author"
             rating_tag = book.find('span', class_='minirating')
             rating_text = rating_tag.text.strip() if rating_tag else "No rating"
             avg_rating, numb_rating = rating_text.split(' — ') if ' — ' in rating_text else (rating_text, "No rating")
-            genre_text = get_genres(book_url) if book_url else []
-            top_reviews = scrape_book_reviews(book_url) if book_url else []
+            #genre_text = get_genres(book_url) if book_url else []
+            #top_reviews = scrape_book_reviews(book_url) if book_url else []
 
             #book schema
             book_info = {
@@ -63,8 +81,8 @@ def scrape_search_results(search_url):
                 "author": author,
                 "avg_rating": avg_rating.replace('avg rating', '').strip(),
                 "numb_rating": numb_rating.replace('ratings', '').strip(),
-                "genres": genre_text,
-                "top_reviews": top_reviews
+                #"genres": genre_text,
+                #"top_reviews": top_reviews
             }
             books.append(book_info)
 
@@ -139,9 +157,9 @@ def scrape_book_reviews(book_url):
 
     reviews = get_reviews(soup)
 
-    next_link_xpath = '//span[@data-testid="loadMore"]|//a[@aria-label="Tap to show more reviews and ratings"]'
+    '''next_link_xpath = '//span[@data-testid="loadMore"]|//a[@aria-label="Tap to show more reviews and ratings"]'
     
-    while len(reviews) <=100: 
+    while len(reviews) <=20: 
         try:
             next_link = driver.find_element(By.XPATH,next_link_xpath)
             driver.execute_script("arguments[0].scrollIntoView(true);", next_link) #from: https://groups.google.com/g/selenium-remote-driver/c/gc60TeZPU5I
@@ -159,8 +177,8 @@ def scrape_book_reviews(book_url):
     if check_for_duplicates(reviews) > 0:
         reviews = [dict(t) for t in {tuple(sorted(d.items())) for d in reviews}] 
         #list comprehension to remove duplicates from list of dicts by turning it into set of tuples and back 
-        # code from https://stackoverflow.com/questions/9427163/remove-duplicate-dict-in-list-in-python
-
+        #code from https://stackoverflow.com/questions/9427163/remove-duplicate-dict-in-list-in-python
+    '''
     return reviews
 
 
