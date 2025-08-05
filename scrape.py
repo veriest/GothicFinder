@@ -40,32 +40,32 @@ def scrape_search_results(search_url):
     if soup is None:
         print("Failed to get the page or parse the content.")
         return []
-    
-    books = get_books(soup)
+    counter = 0
+    counter = get_books(soup,counter)
     i = 1
 
-    while len(books) <=400: 
+    while counter <=400: 
+
         i+=1
-        books.extend(get_books(fetch_page(f'{search_url}?page={i}')))
+        counter = get_books(fetch_page(f'{search_url}?page={i}'),counter)
+        time.sleep(1)
+        close_login()
+
         try:
             driver.find_element(By.XPATH,'//span[@class="next_page disabled"]')
             break
         except:
             pass
-    return books
 
-def get_books(soup):
+#book scraping
+def get_books(soup,counter):
 
     book_containers = soup.find_all('tr', {'itemtype': 'http://schema.org/Book'},limit=5)
-
-    books = []
-
     for book in book_containers:
         try:
             #strip out book information
             title_tag = book.find('a', class_='bookTitle')
             title = title_tag.text.strip() if title_tag else "No title"
-            print(f"got book {title}")
             book_url = urljoin("https://www.goodreads.com", title_tag['href']) if title_tag else None
             author_tag = book.find('a', class_='authorName')
             author = author_tag.text.strip() if author_tag else "No author"
@@ -73,7 +73,7 @@ def get_books(soup):
             rating_text = rating_tag.text.strip() if rating_tag else "No rating"
             avg_rating, numb_rating = rating_text.split(' — ') if ' — ' in rating_text else (rating_text, "No rating")
             #genre_text = get_genres(book_url) if book_url else []
-            #top_reviews = scrape_book_reviews(book_url) if book_url else []
+            #reviews = scrape_book_reviews(book_url) if book_url else []
 
             #book schema
             book_info = {
@@ -82,18 +82,22 @@ def get_books(soup):
                 "avg_rating": avg_rating.replace('avg rating', '').strip(),
                 "numb_rating": numb_rating.replace('ratings', '').strip(),
                 #"genres": genre_text,
-                #"top_reviews": top_reviews
+                #"reviews": top_reviews
             }
-            books.append(book_info)
-
+            #write each book as I get them in case of crashes
+            save_book_to_json(book_info,counter)
+            #add a count of books
+            counter += 1
+            print(counter)
             #add delay as to not request too fast
+
             time.sleep(1)  
 
         except Exception as e:
             print(f"Error extracting book information: {e}")
             traceback.print_exc()
 
-    return books
+    return counter
 
 #get genres, as it is not on main book list page but within the book url
 def get_genres(book_url):
@@ -199,15 +203,9 @@ def main():
     service = Service('/Users/angelinasisixia1/Desktop/School/geckodriver')
     global driver
     with webdriver.Firefox(service=service) as driver:
-        #driver.implicitly_wait(3)
         search_url = f'https://www.goodreads.com/list/show/2384.Best_Gothic_Novels_Suspense_Novels'
-        books = scrape_search_results(search_url)
+        scrape_search_results(search_url)
 
-        if books:
-            for index, book in enumerate(books):
-                save_book_to_json(book, index)
-        else:
-            print("No books were found.")
 
 if __name__ == '__main__':
     main()
