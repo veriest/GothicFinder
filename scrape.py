@@ -10,6 +10,7 @@ from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException, ElementClickInterceptedException
 import traceback
+import sys
 
 driver = None
 
@@ -60,7 +61,7 @@ def scrape_search_results(search_url):
 #book scraping
 def get_books(soup,counter):
 
-    book_containers = soup.find_all('tr', {'itemtype': 'http://schema.org/Book'},limit=5)
+    book_containers = soup.find_all('tr', {'itemtype': 'http://schema.org/Book'})
     for book in book_containers:
         try:
             #strip out book information
@@ -72,8 +73,8 @@ def get_books(soup,counter):
             rating_tag = book.find('span', class_='minirating')
             rating_text = rating_tag.text.strip() if rating_tag else "No rating"
             avg_rating, numb_rating = rating_text.split(' — ') if ' — ' in rating_text else (rating_text, "No rating")
-            #genre_text = get_genres(book_url) if book_url else []
-            #reviews = scrape_book_reviews(book_url) if book_url else []
+            genre_text = get_genres(book_url) if book_url else []
+            reviews = scrape_book_reviews(book_url) if book_url else []
 
             #book schema
             book_info = {
@@ -81,8 +82,8 @@ def get_books(soup,counter):
                 "author": author,
                 "avg_rating": avg_rating.replace('avg rating', '').strip(),
                 "numb_rating": numb_rating.replace('ratings', '').strip(),
-                #"genres": genre_text,
-                #"reviews": top_reviews
+                "genres": genre_text,
+                "reviews": reviews
             }
             #write each book as I get them in case of crashes
             save_book_to_json(book_info,counter)
@@ -161,9 +162,9 @@ def scrape_book_reviews(book_url):
 
     reviews = get_reviews(soup)
 
-    '''next_link_xpath = '//span[@data-testid="loadMore"]|//a[@aria-label="Tap to show more reviews and ratings"]'
+    next_link_xpath = '//span[@data-testid="loadMore"]|//a[@aria-label="Tap to show more reviews and ratings"]'
     
-    while len(reviews) <=20: 
+    while len(reviews) <=300: 
         try:
             next_link = driver.find_element(By.XPATH,next_link_xpath)
             driver.execute_script("arguments[0].scrollIntoView(true);", next_link) #from: https://groups.google.com/g/selenium-remote-driver/c/gc60TeZPU5I
@@ -182,7 +183,7 @@ def scrape_book_reviews(book_url):
         reviews = [dict(t) for t in {tuple(sorted(d.items())) for d in reviews}] 
         #list comprehension to remove duplicates from list of dicts by turning it into set of tuples and back 
         #code from https://stackoverflow.com/questions/9427163/remove-duplicate-dict-in-list-in-python
-    '''
+    
     return reviews
 
 
@@ -198,14 +199,15 @@ def save_book_to_json(book, index, directory='books_json'):
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
 
-def main():
+def main(search_url):
 
-    service = Service('/Users/angelinasisixia1/Desktop/School/geckodriver')
+    service = Service('/Users/angelinasisixia1/Desktop/School/geckodriver') #change this to location of your geckodriver 
     global driver
     with webdriver.Firefox(service=service) as driver:
-        search_url = f'https://www.goodreads.com/list/show/2384.Best_Gothic_Novels_Suspense_Novels'
+        search_url = f'{search_url}'
         scrape_search_results(search_url)
 
 
 if __name__ == '__main__':
-    main()
+    search_url = sys.argv[1]
+    main(search_url)
