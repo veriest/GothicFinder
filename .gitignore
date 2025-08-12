@@ -1,1 +1,5 @@
 .DS_Store
+raw_data/
+tokenized_data/
+categorized_data/
+unlabelled_data/
