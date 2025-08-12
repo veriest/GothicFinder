@@ -169,7 +169,7 @@ def scrape_book_reviews(book_url):
             next_link = driver.find_element(By.XPATH,next_link_xpath)
             driver.execute_script("arguments[0].scrollIntoView(true);", next_link) #from: https://groups.google.com/g/selenium-remote-driver/c/gc60TeZPU5I
             next_link.click()
-            time.sleep(3)
+            time.sleep(2)
             soup = fetch_page(None)
             reviews.extend(get_reviews(soup))
         except ElementNotInteractableException:
