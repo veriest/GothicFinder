@@ -23,9 +23,11 @@ def main(input_folder, output_folder):
         if filename.endswith('.json'):
             filepath = os.path.join(input_folder, filename)
             with open(filepath, 'r', encoding='utf-8') as file:
-                data = json.load(file)
-            df = pd.DataFrame(data)
-
+                try:
+                    df = pd.read_json(filepath, lines=True)
+                except Exception:
+                    df = pd.read_json(filepath)
+            
             df['tokenized'] = tokenize_reviews(df['review_text'])
 
             output_filepath = os.path.join(output_folder, f'tokenized_{filename}')

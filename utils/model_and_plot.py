@@ -5,6 +5,9 @@ import os
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def main(input_dir):
     df = pd.DataFrame()
@@ -66,12 +69,12 @@ def main(input_dir):
         mismatches = true_vs_pred[true_vs_pred['label'] != true_vs_pred['predicted_label']]
         print(f'Number of mismatched books: {len(mismatches)}')
     else:
-        print("No ground truth labels in tokenized_fantasy_2024.json")
+        print("No truth labels in tokenized_fantasy_2025.json")
 
-    # Print label distributions
     print("Train label distribution:\n", train_df['label'].value_counts(normalize=True))
     print("Unseen data label distribution:\n", df3['label'].value_counts(normalize=True))
     print("Book-level predicted label distribution:\n", book_predictions['predicted_label'].value_counts(normalize=True))
+
 
 if __name__ == '__main__':
     input_dir = sys.argv[1]
